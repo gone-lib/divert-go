@@ -6,7 +6,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/imgk/divert-go"
+	"github.com/gone-lib/divert-go"
 )
 
 func main() {

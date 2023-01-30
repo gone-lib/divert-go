@@ -4,6 +4,7 @@
 package divert
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,15 +15,12 @@ import (
 
 var once = sync.Once{}
 
-// GerVersionInfo is ...
 func GetVersionInfo() (ver string, err error) {
 	h, err := Open("false", LayerNetwork, PriorityDefault, FlagDefault)
 	if err != nil {
 		return
 	}
-	defer func() {
-		err = h.Close()
-	}()
+	defer h.Close()
 
 	major, err := h.GetParam(VersionMajor)
 	if err != nil {
@@ -45,7 +43,6 @@ func ioControlEx(h windows.Handle, code CtlCode, ioctl unsafe.Pointer, buf *byte
 	}
 
 	err = windows.GetOverlappedResult(h, overlapped, &iolen, true)
-
 	return
 }
 
@@ -62,15 +59,14 @@ func ioControl(h windows.Handle, code CtlCode, ioctl unsafe.Pointer, buf *byte, 
 	return
 }
 
-// Handle is ...
 type Handle struct {
 	sync.Mutex
 	windows.Handle
 	rOverlapped windows.Overlapped
 	wOverlapped windows.Overlapped
+	Open        uint16
 }
 
-// Recv is ...
 func (h *Handle) Recv(buffer []byte, address *Address) (uint, error) {
 	addrLen := uint(unsafe.Sizeof(Address{}))
 	recv := recv{
@@ -86,7 +82,6 @@ func (h *Handle) Recv(buffer []byte, address *Address) (uint, error) {
 	return uint(iolen), nil
 }
 
-// RecvEx is ...
 func (h *Handle) RecvEx(buffer []byte, address []Address) (uint, uint, error) {
 	addrLen := uint(len(address)) * uint(unsafe.Sizeof(Address{}))
 	recv := recv{
@@ -102,7 +97,6 @@ func (h *Handle) RecvEx(buffer []byte, address []Address) (uint, uint, error) {
 	return uint(iolen), addrLen / uint(unsafe.Sizeof(Address{})), nil
 }
 
-// Send is ...
 func (h *Handle) Send(buffer []byte, address *Address) (uint, error) {
 	send := send{
 		Addr:    uint64(uintptr(unsafe.Pointer(address))),
@@ -117,7 +111,6 @@ func (h *Handle) Send(buffer []byte, address *Address) (uint, error) {
 	return uint(iolen), nil
 }
 
-// SendEx is ...
 func (h *Handle) SendEx(buffer []byte, address []Address) (uint, error) {
 	send := send{
 		Addr:    uint64(uintptr(unsafe.Pointer(&address[0]))),
@@ -132,8 +125,9 @@ func (h *Handle) SendEx(buffer []byte, address []Address) (uint, error) {
 	return uint(iolen), nil
 }
 
-// Shutdown is ...
 func (h *Handle) Shutdown(how Shutdown) error {
+	h.Open = HandleShutdown
+
 	shutdown := shutdown{
 		How: uint32(how),
 	}
@@ -146,8 +140,9 @@ func (h *Handle) Shutdown(how Shutdown) error {
 	return nil
 }
 
-// Close is ...
 func (h *Handle) Close() error {
+	h.Open = HandleClosed
+
 	windows.CloseHandle(h.rOverlapped.HEvent)
 	windows.CloseHandle(h.wOverlapped.HEvent)
 
@@ -159,7 +154,31 @@ func (h *Handle) Close() error {
 	return nil
 }
 
-// GetParam is ...
+func (h *Handle) End() (err error) {
+	h.Open = HandleEnded
+
+	err = h.Shutdown(ShutdownBoth)
+	if err != nil {
+		return err
+	}
+	err = h.Close()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *Handle) Packets() (chan *Packet, error) {
+	if h.Open != HandleOpen {
+		return nil, errNotOpen
+	}
+
+	packetChan := make(chan *Packet, PacketChanCapacity)
+	go h.recvLoop(packetChan)
+	return packetChan, nil
+}
+
 func (h *Handle) GetParam(p Param) (uint64, error) {
 	getParam := getParam{
 		Param: uint32(p),
@@ -174,7 +193,6 @@ func (h *Handle) GetParam(p Param) (uint64, error) {
 	return getParam.Value, nil
 }
 
-// SetParam is ...
 func (h *Handle) SetParam(p Param, v uint64) error {
 	switch p {
 	case QueueLength:
@@ -204,4 +222,25 @@ func (h *Handle) SetParam(p Param, v uint64) error {
 	}
 
 	return nil
+}
+
+func (h *Handle) recvLoop(packetChan chan<- *Packet) {
+	for h.Open == HandleOpen {
+		addr := Address{}
+		buff := make([]byte, PacketBufferSize)
+
+		_, err := h.Recv(buff, &addr)
+		if err != nil {
+			fmt.Println("Recv loop error: " + err.Error())
+			close(packetChan)
+			break
+		}
+
+		packet := &Packet{
+			Content: buff,
+			Addr:    &addr,
+		}
+
+		packetChan <- packet
+	}
 }

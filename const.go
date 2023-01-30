@@ -4,6 +4,21 @@
 package divert
 
 type Layer int
+type Event int
+type Param int
+type Shutdown int
+
+// copy from github.com/tboerc/divert-go
+const (
+	HandleOpen     = 1
+	HandleShutdown = 2
+	HandleClosed   = 3
+	HandleEnded    = 4
+)
+const (
+	PacketBufferSize   = 1500
+	PacketChanCapacity = 256
+)
 
 func (l Layer) String() string {
 	switch l {
@@ -23,8 +38,6 @@ func (l Layer) String() string {
 		return ""
 	}
 }
-
-type Event int
 
 func (e Event) String() string {
 	switch e {
@@ -55,8 +68,6 @@ func (e Event) String() string {
 	}
 }
 
-type Shutdown int
-
 func (s Shutdown) String() string {
 	switch s {
 	case ShutdownRecv:
@@ -69,8 +80,6 @@ func (s Shutdown) String() string {
 		return ""
 	}
 }
-
-type Param int
 
 func (p Param) String() string {
 	switch p {

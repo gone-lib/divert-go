@@ -92,6 +92,25 @@ func (r *Reflect) Layer() Layer {
 }
 
 // Address is ...
+// INT64  Timestamp;
+// UINT64 Layer:8;
+// UINT64 Event:8;
+// UINT64 Sniffed:1;
+// UINT64 Outbound:1;
+// UINT64 Loopback:1;
+// UINT64 Impostor:1;
+// UINT64 IPv6:1;
+// UINT64 IPChecksum:1;
+// UINT64 TCPChecksum:1;
+// UINT64 UDPChecksum:1;
+// union
+//
+//	{
+//		WINDIVERT_DATA_NETWORK Network;
+//		WINDIVERT_DATA_FLOW    Flow;
+//		WINDIVERT_DATA_SOCKET  Socket;
+//		WINDIVERT_DATA_REFLECT Reflect;
+//	};
 type Address struct {
 	Timestamp int64
 	layer     uint8
@@ -155,4 +174,36 @@ func (a *Address) Flow() *Flow {
 // Reflect is ...
 func (a *Address) Reflect() *Reflect {
 	return (*Reflect)(unsafe.Pointer(&a.union))
+}
+
+func (a *Address) Sniffed() bool {
+	return a.Flags&1 == 1
+}
+
+func (a *Address) Outbound() bool {
+	return (a.Flags>>1)&1 == 1
+}
+
+func (a *Address) Loopback() bool {
+	return (a.Flags>>2)&1 == 1
+}
+
+func (a *Address) Impostor() bool {
+	return (a.Flags>>3)&1 == 1
+}
+
+func (a *Address) IPv6() bool {
+	return (a.Flags>>4)&1 == 1
+}
+
+func (a *Address) IPChecksum() bool {
+	return (a.Flags>>5)&1 == 1
+}
+
+func (a *Address) TCPChecksum() bool {
+	return (a.Flags>>6)&1 == 1
+}
+
+func (a *Address) UDPChecksum() bool {
+	return (a.Flags>>7)&1 == 1
 }

@@ -13,7 +13,7 @@ import (
 
 	"golang.org/x/sys/windows"
 
-	"github.com/imgk/divert-go/memmod"
+	"github.com/gone-lib/divert-go/memmod"
 )
 
 var (

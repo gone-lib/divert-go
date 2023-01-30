@@ -44,14 +44,20 @@ func open(filter string, layer Layer, priority int16, flags uint64) (h *Handle, 
 		wOverlapped: windows.Overlapped{
 			HEvent: wEvent,
 		},
+		Open: HandleOpen,
 	}, nil
 }
 
-// CalcChecksums is ...
-func CalcChecksums(buffer []byte, address *Address, flags uint64) bool {
-	re, _, err := winDivertCalcChecksums.Call(uintptr(unsafe.Pointer(&buffer[0])), uintptr(len(buffer)), uintptr(unsafe.Pointer(address)), uintptr(flags))
+func HelperCalcChecksum(packet *Packet, flags ChecksumFlag) bool {
+	result, _, err := winDivertHelperCalcChecksums.Call(
+		uintptr(unsafe.Pointer(&packet.Content[0])),
+		uintptr(len(packet.Content)),
+		uintptr(unsafe.Pointer(&packet.Addr)),
+		uintptr(flags))
+
 	if err != nil {
 		return false
 	}
-	return re != 0
+
+	return result == 1
 }

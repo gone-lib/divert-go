@@ -16,6 +16,7 @@ var (
 	errQueueSize   = fmt.Errorf("Queue size is not correct, Max: %v, Min: %v", QueueSizeMax, QueueSizeMin)
 	errQueueParam  = errors.New("VersionMajor and VersionMinor only can be used in function GetParam")
 	errPriority    = fmt.Errorf("Priority is not Correct, Max: %v, Min: %v", PriorityHighest, PriorityLowest)
+	errNotOpen     = errors.New("the handle isn't open")
 )
 
 const (
@@ -62,10 +63,8 @@ const (
 	ErrInvalidHandle = Error(windows.ERROR_INVALID_HANDLE)
 )
 
-// Error is ...
 type Error windows.Errno
 
-// Error is ...
 func (e Error) Error() string {
 	switch windows.Errno(e) {
 	case windows.ERROR_FILE_NOT_FOUND:

@@ -1,16 +1,3 @@
-# Go bindings of [WinDivert](https://github.com/basil00/Divert)
-
-## Feature
-
-+ Support WinDivert 2.x
-+ Optional CGO support to remove dependence of WinDivert.dll, use `-tags="divert_cgo"`
-+ Support loading dll from rsrc data, use `-tags="divert_embedded"`
-
-More details about WinDivert please refer https://www.reqrypt.org/windivert-doc.html.
-
-## Usage
-
-```Go
 package main
 
 import (
@@ -39,7 +26,7 @@ func checkPacket(handle *divert.Handle, packetChan <-chan *divert.Packet) {
 
 func main() {
 	// var filter = "(outbound  and tcp.DstPort == 1800) or (inbound  and  tcp.SrcPort == 1800)"
-	var filter = "true"
+	var filter = "!loopback"
 	handle, err := divert.Open(filter, divert.LayerNetwork, divert.PriorityLowest, 0)
 
 	if err != nil {
@@ -56,4 +43,3 @@ func main() {
 	//defer handle.Close()
 	checkPacket(handle, packetChan)
 }
-```

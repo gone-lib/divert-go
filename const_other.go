@@ -9,7 +9,7 @@ const (
 	LayerFlow           Layer = 2
 	LayerSocket         Layer = 3
 	LayerReflect        Layer = 4
-	//LayerEthernet       Layer = 5
+	LayerEthernet       Layer = 5
 )
 
 const (

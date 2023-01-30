@@ -1,5 +1,9 @@
-module github.com/imgk/divert-go
+module github.com/gone-lib/divert-go
 
-go 1.18
+go 1.19
 
-require golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
+require (
+	github.com/google/gopacket v1.1.19
+	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+	golang.org/x/sys v0.0.0-20211210111614-af8b64212486
+)
